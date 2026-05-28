@@ -1,0 +1,156 @@
+﻿@model ShieldOps.Models.ViewModels.ProductDetailsViewModel
+@{
+    ViewData["Title"] = $"{Model.Product.Name} - Specifications Ledger";
+}
+
+<div class="container mt-4 pb-5 mb-5">
+    <div class="row bg-body p-4 rounded shadow-sm border border-secondary-subtle">
+        <div class="col-md-5 text-center mb-3">
+            <img src="@Model.Product.ImageUrl" class="img-fluid rounded border border-secondary-subtle shadow-xs object-fit-cover" style="max-height: 380px; width: 100%;" alt="" />
+        </div>
+        <div class="col-md-7">
+            <span class="badge bg-dark border border-secondary text-white mb-2 text-uppercase">@Model.Product.Type Classification</span>
+            <h2 class="fw-bold text-body-emphasis mb-1">@Model.Product.Name</h2>
+            <h5 class="text-body-secondary small mb-3">Domain Nodes: <strong class="text-primary">@Model.Product.Category?.Name</strong></h5>
+            <hr class="border-secondary-subtle" />
+            <p class="fs-5 text-body-secondary" style="text-align: justify;">@Model.Product.Description</p>
+            
+            <div class="bg-body-tertiary p-3 rounded border border-secondary-subtle d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+                <div>
+                    <small class="text-body-secondary d-block fw-semibold">System Surcharge Cost</small>
+                    <span class="fs-2 fw-bold text-success">$@Model.Product.Price.ToString("F2")</span>
+                </div>
+                <div>
+                    @if (Model.Product.StockQuantity > 0)
+                    {
+                        <form asp-controller="Cart" asp-action="AddToCart" method="post" class="d-flex align-items-center gap-3 m-0">
+                            <input type="hidden" name="productId" value="@Model.Product.Id" />
+                            
+                            @if (Model.Product.Type == ShieldOps.Models.ProductType.Physical)
+                            {
+                                <div class="input-group shadow-2xs" style="max-width: 130px;">
+                                    <button class="btn btn-outline-secondary border-secondary-subtle fw-bold text-body" type="button" onclick="decrementQty('detailsQty')">-</button>
+                                    <input type="number" id="detailsQty" name="quantity" class="form-control bg-body border-secondary-subtle text-center fw-bold text-body p-0" value="1" min="1" max="@Model.Product.StockQuantity" readonly style="font-size: 15px;" />
+                                    <button class="btn btn-outline-secondary border-secondary-subtle fw-bold text-body" type="button" onclick="incrementQty('detailsQty', @Model.Product.StockQuantity)">+</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <input type="hidden" name="quantity" value="1" />
+                            }
+
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold px-4 text-uppercase m-0" style="font-size: 15px;">
+                                <i class="bi bi-cart-plus-fill"></i> Allocate Asset
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary btn-lg disabled fw-bold text-uppercase" disabled>Countermeasure Depleted</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-5 mb-4">
+            <div class="card p-4 border border-secondary-subtle shadow-sm bg-body-tertiary rounded-3">
+                @if (ViewData["IsEditMode"] != null && (bool)ViewData["IsEditMode"] == true)
+                {
+                    <h4 class="fw-bold text-body-emphasis mb-3"><i class="bi bi-pencil-square text-warning"></i> Modify Your Log Evaluation</h4>
+                }
+                else
+                {
+                    <h4 class="fw-bold text-body-emphasis mb-3"><i class="bi bi-patch-check-fill text-info"></i> Verified Feedback Console</h4>
+                }
+                
+                @if (Model.IsEligibleToReview)
+                {
+                    <form asp-controller="Catalog" asp-action="SubmitReview" method="post" class="m-0">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Product.Id" value="@Model.Product.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Compliance Star Rating</label>
+                            <select name="NewRating" class="form-select bg-body border-secondary-subtle fw-bold text-warning">
+                                <option value="5" selected="@(Model.NewRating == 5)">★★★★★ (5/5) Excellent Deployment</option>
+                                <option value="4" selected="@(Model.NewRating == 4)">★★★★☆ (4/5) Fully Stable</option>
+                                <option value="3" selected="@(Model.NewRating == 3)">★★★☆☆ (3/5) Mid-Level Compliance</option>
+                                <option value="2" selected="@(Model.NewRating == 2)">★★☆☆☆ (2/5) Optimization Needed</option>
+                                <option value="1" selected="@(Model.NewRating == 1)">★☆☆☆☆ (1/5) Security Failure</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Technical Compliance Review Comment</label>
+                            <textarea name="NewComment" class="form-control bg-body border-secondary-subtle text-body" rows="4" placeholder="Share configuration status metrics results notes logs...">@Model.NewComment</textarea>
+                        </div>
+
+                        @if (ViewData["IsEditMode"] != null && (bool)ViewData["IsEditMode"] == true)
+                        {
+                            <button type="submit" class="btn btn-warning w-100 fw-bold text-uppercase py-2 shadow-xs text-dark">Save Compliance Modifications</button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-success w-100 fw-bold text-uppercase py-2 shadow-xs">Authorize and Log Feedback</button>
+                        }
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-dark border border-secondary p-3 m-0 rounded text-center text-body-secondary bg-body" role="alert">
+                        <i class="bi bi-lock-fill fs-2 d-block mb-2 text-secondary"></i>
+                        <h6 class="fw-bold text-body-emphasis mb-1">Feedback Matrix Locked</h6>
+                        <small class="small d-block text-body-secondary">Only users holding verified proof of purchase tracking logs containing status marked as <strong class="text-success">Delivered</strong> can evaluate this module.</small>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <h4 class="fw-bold text-body-emphasis mb-3"><i class="bi bi-chat-square-text-fill"></i> Asset Performance Logs (@Model.Reviews.Count)</h4>
+            @if (!Model.Reviews.Any())
+            {
+                <p class="text-body-secondary bg-body p-4 rounded text-center border border-secondary-subtle shadow-xs">No active field compliance evaluations logged for this tactical node yet.</p>
+            }
+            else
+            {
+                @foreach (var rev in Model.Reviews)
+                {
+                    <div class="card shadow-sm border border-secondary-subtle bg-body p-3 mb-3 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-secondary-subtle pb-1">
+                            <div>
+                                <strong class="text-body-emphasis d-block">@(rev.User != null ? rev.User.FullName : "System Anonymous Operator")</strong>
+                                <small class="text-body-secondary small">Logged on: @rev.CreatedAt.ToLocalTime().ToString("g")</small>
+                            </div>
+                            <span class="fs-5 text-warning fw-bold">
+                                @(new string('★', rev.Rating))@(new string('☆', 5 - rev.Rating))
+                            </span>
+                        </div>
+                        <p class="mb-0 text-body-secondary italic">"@rev.Comment"</p>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function incrementQty(inputId, maxStock) {
+            var input = document.getElementById(inputId);
+            var currentVal = parseInt(input.value);
+            if (currentVal < maxStock) {
+                input.value = currentVal + 1;
+            }
+        }
+        function decrementQty(inputId) {
+            var input = document.getElementById(inputId);
+            var currentVal = parseInt(input.value);
+            if (currentVal > 1) {
+                input.value = currentVal - 1;
+            }
+        }
+    </script>
+}

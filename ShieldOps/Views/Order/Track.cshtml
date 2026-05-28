@@ -1,0 +1,107 @@
+﻿@model ShieldOps.Models.Order
+@{
+    ViewData["Title"] = $"Tracking Operation #{Model.Id}";
+    int currentStatusIndex = (int)Model.Status; // Maps enum state index directly [0 to 4]
+}
+
+<div class="container mt-5">
+    <div class="card shadow-lg border border-secondary-subtle rounded p-4 bg-body mb-4">
+        
+        <div class="d-flex justify-content-between align-items-center border-bottom border-secondary-subtle pb-3 mb-4">
+            <div>
+                <h3 class="fw-bold m-0 text-body-emphasis">Tracking Operation Manifest #@Model.Id</h3>
+                <small class="text-body-secondary">Initiated On: @Model.OrderDate.ToLocalTime().ToString("f")</small>
+            </div>
+            <span class="badge bg-dark border border-secondary text-white px-3 py-2 fs-6">Invoice Total: $@Model.TotalAmount.ToString("F2")</span>
+        </div>
+
+        <div class="row justify-content-between position-relative my-5 px-3">
+            <div class="position-absolute top-50 start-0 translate-middle-y bg-secondary rounded opacity-25" style="height: 6px; width: 96%; left: 2% !important; z-index: 1;"></div>
+            <div class="position-absolute top-50 start-0 translate-middle-y bg-success rounded transition-all" style="height: 6px; width: @(currentStatusIndex * 24)%; left: 2% !important; z-index: 1;"></div>
+
+            <div class="col text-center position-relative" style="z-index: 2;">
+                <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center border border-4 fs-4 fw-bold @(currentStatusIndex >= 0 ? "bg-success text-white border-success shadow-sm" : "bg-body-tertiary text-body-secondary border-secondary-subtle")" style="width: 50px; height: 50px;">
+                    <i class="bi bi-cart-check"></i>
+                </div>
+                <p class="fw-bold small mt-2 mb-0 @(currentStatusIndex >= 0 ? "text-success" : "text-body-secondary")">Ordered</p>
+            </div>
+
+            <div class="col text-center position-relative" style="z-index: 2;">
+                <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center border border-4 fs-4 fw-bold @(currentStatusIndex >= 1 ? "bg-success text-white border-success shadow-sm" : "bg-body-tertiary text-body-secondary border-secondary-subtle")" style="width: 50px; height: 50px;">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+                <p class="fw-bold small mt-2 mb-0 @(currentStatusIndex >= 1 ? "text-success" : "text-body-secondary")">Packing</p>
+            </div>
+
+            <div class="col text-center position-relative" style="z-index: 2;">
+                <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center border border-4 fs-4 fw-bold @(currentStatusIndex >= 2 ? "bg-success text-white border-success shadow-sm" : "bg-body-tertiary text-body-secondary border-secondary-subtle")" style="width: 50px; height: 50px;">
+                    <i class="bi bi-building-up"></i>
+                </div>
+                <p class="fw-bold small mt-2 mb-0 @(currentStatusIndex >= 2 ? "text-success" : "text-body-secondary")">In Warehouse</p>
+            </div>
+
+            <div class="col text-center position-relative" style="z-index: 2;">
+                <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center border border-4 fs-4 fw-bold @(currentStatusIndex >= 3 ? "bg-success text-white border-success shadow-sm" : "bg-body-tertiary text-body-secondary border-secondary-subtle")" style="width: 50px; height: 50px;">
+                    <i class="bi bi-truck-flatbed"></i>
+                </div>
+                <p class="fw-bold small mt-2 mb-0 @(currentStatusIndex >= 3 ? "text-success" : "text-body-secondary")">Shipped</p>
+            </div>
+
+            <div class="col text-center position-relative" style="z-index: 2;">
+                <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center border border-4 fs-4 fw-bold @(currentStatusIndex >= 4 ? "bg-success text-white border-success shadow-sm" : "bg-body-tertiary text-body-secondary border-secondary-subtle")" style="width: 50px; height: 50px;">
+                    <i class="bi bi-house-lock"></i>
+                </div>
+                <p class="fw-bold small mt-2 mb-0 @(currentStatusIndex >= 4 ? "text-success" : "text-body-secondary")">Delivered</p>
+            </div>
+        </div>
+
+        <div class="mt-4 bg-body-tertiary p-3 rounded border border-secondary-subtle">
+            <h5 class="fw-bold text-body-emphasis border-bottom border-secondary-subtle pb-2 mb-3">
+                <i class="bi bi-ticket-detailed text-primary"></i> Assets Dispatched Matrix
+            </h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle m-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="text-white border-secondary-subtle">Security Package Item</th>
+                            <th class="text-center text-white border-secondary-subtle">Allocated Qty</th>
+                            <th class="text-end text-white border-secondary-subtle">Base Price</th>
+                            <th class="text-end text-white border-secondary-subtle">Cryptographic Security Activation License Keys</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in Model.OrderItems)
+                        {
+                            <tr class="border-secondary-subtle">
+                                <td class="fw-bold text-body-emphasis">@line.Product?.Name</td>
+                                <td class="text-center fw-bold text-body">@line.Quantity</td>
+                                <td class="text-end text-body-secondary fw-bold">$@line.PriceAtPurchase.ToString("F2")</td>
+                                <td class="text-end">
+                                    @if (!string.IsNullOrEmpty(line.GeneratedLicenseKey))
+                                    {
+                                        <code class="bg-dark text-warning p-2 rounded border border-warning font-monospace fs-6 fw-bold shadow-sm d-inline-block">@line.GeneratedLicenseKey</code>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-body-secondary small italic"><i class="bi bi-truck"></i> Physical Hardware Courier Dispatch Pending</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <span class="text-body-secondary small">
+                System Delivery Node Destination: <strong class="text-body-emphasis">@Model.ShippingAddress, @Model.City (@Model.PostalCode)</strong>
+            </span>
+            
+            <a asp-controller="Order" asp-action="MyOrders" class="btn btn-outline-body border-secondary-subtle text-body-emphasis bg-body-tertiary fw-bold text-uppercase shadow-2xs py-2 px-3">
+                <i class="bi bi-arrow-left-short fs-5 align-middle"></i> Return to My Orders
+            </a>
+        </div>
+
+    </div>
+</div>

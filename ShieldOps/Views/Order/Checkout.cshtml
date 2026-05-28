@@ -1,0 +1,110 @@
+﻿@model ShieldOps.Models.ViewModels.CheckoutViewModel
+@{
+    ViewData["Title"] = "Secure Checkout Console";
+}
+
+<div class="container mt-5">
+    <h2 class="fw-bold mb-4 border-bottom border-secondary-subtle pb-2 text-body-emphasis">
+        <i class="bi bi-shield-check text-success"></i> Transaction Terminal
+    </h2>
+
+    <div class="row">
+        <div class="col-md-5 mb-4 order-md-2">
+            <div class="card shadow-sm border border-secondary-subtle bg-body-tertiary p-4 rounded-3 position-sticky" style="top: 20px;">
+                <h5 class="fw-bold text-body-emphasis border-bottom border-secondary-subtle pb-2 mb-3">Manifest Summary</h5>
+                <ul class="list-group list-group-flush mb-0 bg-transparent">
+                    @foreach (var item in Model.CartItems)
+                    {
+                        <li class="list-group-item d-flex justify-content-between lh-sm bg-transparent ps-0 border-secondary-subtle text-body">
+                            <div>
+                                <h6 class="my-0 fw-bold text-body-emphasis">@item.ProductName</h6>
+                                <small class="text-body-secondary">Qty: @item.Quantity × $@item.Price.ToString("F2")</small>
+                            </div>
+                            <span class="text-success fw-bold font-monospace">$@item.TotalPrice.ToString("F2")</span>
+                        </li>
+                    }
+                    <li class="list-group-item d-flex justify-content-between bg-transparent ps-0 pt-3 border-0">
+                        <span class="fs-5 fw-bold text-body-emphasis">Grand Total Amount</span>
+                        <strong class="fs-4 text-success font-monospace">$@Model.TotalAmount.ToString("F2")</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-7 order-md-1">
+            <div class="card shadow-sm border border-secondary-subtle p-4 bg-body rounded-3">
+                <h4 class="fw-bold mb-3 text-body-emphasis">Security Order Authorization</h4>
+                
+                <form asp-controller="Order" asp-action="ProcessCheckout" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3 small"></div>
+
+                    @if (Model.RequiresShipping)
+                    {
+                        <div id="shippingSection" class="p-3 bg-body-tertiary rounded-3 mb-4 border border-secondary-subtle shadow-2xs">
+                            <h5 class="fw-bold text-info mb-3"><i class="bi bi-truck"></i> Logistical Shipping Matrix (COD)</h5>
+                            <p class="small text-body-secondary mb-3">Your manifest contains physical hardware items. Destination address parameters are required for courier route routing.</p>
+                            
+                            <div class="mb-3">
+                                <label asp-for="ShippingAddress" class="form-label fw-bold small text-uppercase text-body-emphasis font-monospace" style="letter-spacing: 0.5px;">Destination Street Address</label>
+                                <input asp-for="ShippingAddress" class="form-control bg-body text-body-emphasis border-secondary-subtle py-2" placeholder="123 Cybersecurity Lane" autocomplete="off" required />
+                                <span asp-validation-for="ShippingAddress" class="text-danger small mt-1 d-block"></span>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="City" class="form-label fw-bold small text-uppercase text-body-emphasis font-monospace" style="letter-spacing: 0.5px;">City</label>
+                                    <input asp-for="City" class="form-control bg-body text-body-emphasis border-secondary-subtle py-2" placeholder="Lahore" autocomplete="off" required />
+                                    <span asp-validation-for="City" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="PostalCode" class="form-label fw-bold small text-uppercase text-body-emphasis font-monospace" style="letter-spacing: 0.5px;">Postal Security Code</label>
+                                    <input asp-for="PostalCode" class="form-control bg-body text-body-emphasis border-secondary-subtle py-2" placeholder="54000" autocomplete="off" required />
+                                    <span asp-validation-for="PostalCode" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div id="digitalPaymentSection" class="p-3 bg-body-tertiary rounded-3 mb-4 border border-warning-subtle shadow-2xs">
+                            <h5 class="fw-bold text-warning mb-3"><i class="bi bi-credit-card-2-front"></i> Instant Secure Digital Settlement</h5>
+                            <p class="small text-body-secondary mb-3">Purely digital license framework detected. Provide testing sandboxed credit configurations to dispatch activation pins immediately.</p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-uppercase text-body-emphasis font-monospace" style="letter-spacing: 0.5px;">Test Card Matrix Number</label>
+                                <input type="text" class="form-control bg-body text-body-emphasis border-secondary-subtle py-2 text-center font-monospace fs-5" placeholder="4000 1234 5678 9010" required maxlength="19" autocomplete="off" />
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold small text-uppercase text-body-emphasis font-monospace" style="letter-spacing: 0.5px;">Expiration Clock</label>
+                                    <input type="text" class="form-control bg-body text-body-emphasis border-secondary-subtle py-2 text-center font-monospace" placeholder="12/29" required maxlength="5" autocomplete="off" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold small text-uppercase text-body-emphasis font-monospace" style="letter-spacing: 0.5px;">Security CVV Vector</label>
+                                    <input type="password" class="form-control bg-body text-body-emphasis border-secondary-subtle py-2 text-center font-monospace" placeholder="***" required maxlength="3" autocomplete="off" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="payment-mock p-3 bg-dark border border-secondary text-white rounded-3 mb-4 shadow-sm">
+                        <h6 class="fw-bold text-warning mb-1" style="font-size: 14px; letter-spacing: 0.5px;"><i class="bi bi-wallet2"></i> Integrated Sandbox Payment Gateway</h6>
+                        <small class="text-white-50 d-block mb-0">Testing Suite Environment Active: Pure digital software orders bypass courier routing pipelines and authorize instantly.</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100 text-uppercase fw-bold shadow-sm py-3" style="font-size: 15px; letter-spacing: 0.5px;">
+                        Authorize Secure Purchase
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

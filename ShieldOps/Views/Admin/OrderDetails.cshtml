@@ -1,0 +1,131 @@
+﻿@model ShieldOps.Models.Order
+@{
+    ViewData["Title"] = $"Terminal Order Management Workspace - #{Model.Id}";
+    var totalReviews = ViewBag.Reviews as List<ShieldOps.Models.Review>;
+}
+
+<div class="container mt-5 pb-5 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary-subtle pb-2">
+        <h2 class="fw-bold m-0 text-body-emphasis"><i class="bi bi-cpu-fill text-primary"></i> Manifest Audit Node ##@Model.Id</h2>
+        <a asp-action="Index" class="btn btn-outline-secondary text-uppercase fw-bold small"><i class="bi bi-arrow-left"></i> Core Dashboard</a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm border border-secondary-subtle bg-body rounded-3 p-4 mb-4">
+                <h5 class="fw-bold text-body-emphasis border-bottom border-secondary-subtle pb-2 mb-3"><i class="bi bi-person-badge text-info"></i> Operator Dispatch Identification</h5>
+                <div class="row g-3 small text-body">
+                    <div class="col-md-6"><strong>Account Identity:</strong> <span class="text-body-secondary">@Model.User?.FullName (@Model.User?.Email)</span></div>
+                    <div class="col-md-6"><strong>Timestamp Clock:</strong> <span class="text-body-secondary">@Model.OrderDate.ToLocalTime().ToString("F")</span></div>
+                    <div class="col-md-12"><strong>Target Node Gateway:</strong> <span class="text-primary fw-semibold">@Model.ShippingAddress, @Model.City (@Model.PostalCode)</span></div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border border-secondary-subtle bg-body rounded-3 overflow-hidden mb-4">
+                <div class="table-responsive">
+                    <table class="table align-middle m-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="ps-3 py-3 text-white">Strategic Line Component</th>
+                                <th class="text-center text-white">Load Type</th>
+                                <th class="text-center text-white">Qty</th>
+                                <th class="text-end text-white">Unit Cost</th>
+                                <th class="text-end text-white">Security License String</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-body">
+                            @foreach (var item in Model.OrderItems)
+                            {
+                                <tr class="border-secondary-subtle">
+                                    <td class="ps-3 fw-bold text-body-emphasis">@item.Product?.Name</td>
+                                    <td class="text-center"><span class="badge bg-dark border text-uppercase" style="font-size:10px;">@item.Product?.Type</span></td>
+                                    <td class="text-center fw-bold">@item.Quantity</td>
+                                    <td class="text-end text-body-secondary fw-semibold">$@item.PriceAtPurchase.ToString("F2")</td>
+                                    <td class="text-end font-monospace">
+                                        @if (!string.IsNullOrEmpty(item.GeneratedLicenseKey))
+                                        {
+                                            <code class="bg-dark text-warning p-2 rounded border border-warning font-monospace small">@item.GeneratedLicenseKey</code>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small italic">Awaiting Deliver Settlement</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border border-secondary-subtle bg-body rounded-3 p-4">
+                <h5 class="fw-bold text-body-emphasis border-bottom border-secondary-subtle pb-2 mb-3"><i class="bi bi-chat-square-text text-warning"></i> Logged User Compliance Evaluations (@totalReviews?.Count)</h5>
+                @if (totalReviews == null || !totalReviews.Any())
+                {
+                    <p class="text-body-secondary small italic m-0">No active performance evaluation matrices recorded by this user for current line components yet.</p>
+                }
+                else
+                {
+                    @foreach (var review in totalReviews)
+                    {
+                        <div class="p-3 rounded border border-secondary-subtle bg-body-tertiary mb-2">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold text-body-emphasis">Product Node Matrix ID #@review.ProductId</span>
+                                <span class="text-warning font-monospace fw-bold">@(new string('★', review.Rating))</span>
+                            </div>
+                            <p class="mb-0 text-body-secondary small italic">"@review.Comment"</p>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border border-secondary-subtle bg-body-tertiary p-4 rounded-3 mb-4">
+                <h5 class="fw-bold border-bottom border-secondary-subtle pb-2 text-body-emphasis mb-3"><i class="bi bi-sliders"></i> System Advance Node</h5>
+                <form asp-action="UpdateStatusDropdown" method="post" class="m-0">
+                    <input type="hidden" name="orderId" value="@Model.Id" />
+                    <div class="mb-3">
+                        <label class="form-label small font-monospace text-uppercase fw-bold text-body-secondary">Modify Structural Milestone State</label>
+                        <select name="newStatus" class="form-select bg-body border-secondary-subtle text-body-emphasis fw-bold" asp-for="Status" asp-items="Html.GetEnumSelectList<ShieldOps.Models.OrderStatus>()" onchange="this.form.submit();">
+                        </select>
+                    </div>
+                    <small class="text-body-secondary d-block opacity-75">Selecting status instantly syncs telemetry logs across client profiles interfaces maps.</small>
+                </form>
+            </div>
+
+            @if (Model.ReturnState != ReturnStatus.None)
+            {
+                <div class="card shadow-sm border border-secondary-subtle bg-body-tertiary p-4 rounded-3">
+                    <h5 class="fw-bold border-bottom border-secondary-subtle pb-2 text-body-emphasis mb-3"><i class="bi bi-arrow-left-right text-danger"></i> Reverse Audit Request</h5>
+                    <div class="p-3 bg-body rounded border border-secondary-subtle mb-3">
+                        <span class="d-block small font-monospace text-uppercase text-muted fw-bold mb-1">User Exception Rationale:</span>
+                        <p class="small text-body-emphasis italic m-0">"@Model.ReturnReason"</p>
+                    </div>
+
+                    @if (Model.ReturnState == ReturnStatus.Pending)
+                    {
+                        <div class="d-flex gap-2">
+                            <form asp-action="ProcessReturn" method="post" class="w-50 m-0">
+                                <input type="hidden" name="orderId" value="@Model.Id" />
+                                <input type="hidden" name="approve" value="true" />
+                                <button type="submit" class="btn btn-success w-100 fw-bold text-uppercase btn-sm py-2">Accept Reversal</button>
+                            </form>
+                            <form asp-action="ProcessReturn" method="post" class="w-50 m-0">
+                                <input type="hidden" name="orderId" value="@Model.Id" />
+                                <input type="hidden" name="approve" value="false" />
+                                <button type="submit" class="btn btn-outline-danger w-100 fw-bold text-uppercase btn-sm py-2">Reject Request</button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert @(Model.ReturnState == ReturnStatus.Approved ? "alert-success bg-success-subtle text-success" : "alert-danger bg-danger-subtle text-danger") border-0 p-3 m-0 small fw-bold text-center rounded shadow-2xs" role="alert">
+                            <i class="bi bi-info-circle-fill"></i> Reverse Manifest Loop Status: @Model.ReturnState
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,47 @@
+﻿@model ShieldOps.Models.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Secure Terminal Access Portal";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-lg border-0 rounded">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4><i class="bi bi-person-badge-fill"></i> Central Terminal Authentication</h4>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Login" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label font-weight-bold">Operator Email</label>
+                        <input asp-for="Email" class="form-control" placeholder="operator@shieldops.com" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label font-weight-bold">Access Password</label>
+                        <input asp-for="Password" class="form-control" placeholder="Enter system key" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" asp-for="RememberMe" />
+                        <label class="form-check-label" asp-for="RememberMe">Maintain Session Credentials</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-dark w-100 py-2 fs-5">Authorize Connection</button>
+                </form>
+            </div>
+            <div class="card-footer text-center py-3">
+                <p class="mb-0">New Security Operator? <a asp-action="Register" class="text-decoration-none text-primary fw-bold">Register System Profile</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

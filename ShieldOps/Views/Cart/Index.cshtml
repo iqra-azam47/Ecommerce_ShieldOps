@@ -1,0 +1,135 @@
+﻿@model List<ShieldOps.Models.ViewModels.CartItemViewModel>
+@{
+    ViewData["Title"] = "Session Cart Ledger";
+}
+
+<div class="container mt-5">
+    <h2 class="fw-bold mb-4 border-bottom border-secondary-subtle pb-2 text-body-emphasis">
+        <i class="bi bi-cart4 text-primary"></i> Current Allocation Manifest
+    </h2>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-octagon-fill"></i> @TempData["SuccessMessage"] @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card p-5 text-center shadow-sm border border-secondary-subtle bg-body-tertiary rounded-3 my-5 pb-4">
+            <div class="py-4">
+                <i class="bi bi-cart-x text-body-secondary mb-3 d-block" style="font-size: 55px;"></i>
+                <h4 class="fw-bold text-body-emphasis mb-2">Your tactical assignment cart is currently unallocated.</h4>
+                <p class="text-body-secondary small mb-4">Return to the equipment console to fill your inventory pipeline.</p>
+                
+                <a asp-controller="Catalog" asp-action="Index" class="btn btn-primary fw-bold text-uppercase px-4 py-2 shadow-xs mx-auto">
+                    <i class="bi bi-arrow-left-short"></i> Browse Catalog Console
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-sm border border-secondary-subtle bg-body rounded-3 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table align-middle m-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th scope="col" class="ps-3 border-secondary-subtle py-3 text-white">Strategic Asset</th>
+                                    <th scope="col" class="text-center border-secondary-subtle text-white">Classification</th>
+                                    <th scope="col" class="text-center border-secondary-subtle text-white" style="min-width: 130px;">Units</th>
+                                    <th scope="col" class="text-end border-secondary-subtle text-white">Base Cost</th>
+                                    <th scope="col" class="text-end border-secondary-subtle text-white">Aggregate</th>
+                                    <th scope="col" class="text-center border-secondary-subtle text-white">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-body">
+                                @foreach (var item in Model)
+                                {
+                                    <tr class="border-secondary-subtle">
+                                        <td class="ps-3 py-3">
+                                            <div class="d-flex align-items-center">
+                                                <span class="fw-bold text-body-emphasis">@item.ProductName</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-dark border border-secondary text-white font-monospace text-uppercase" style="font-size: 11px;">
+                                                @item.ProductType
+                                            </span>
+                                        </td>
+                                        
+                                        <td class="text-center">
+                                            @if (item.ProductType == "Physical")
+                                            {
+                                                <form asp-controller="Cart" asp-action="UpdateQuantity" method="post" class="d-flex align-items-center justify-content-center input-group input-group-sm mx-auto" style="max-width: 115px;">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="productId" value="@item.ProductId" />
+                                                    
+                                                    <button type="submit" name="actionType" value="decrease" class="btn btn-outline-secondary border-secondary-subtle fw-bold px-2 text-body">-</button>
+                                                    
+                                                    <input type="text" class="form-control bg-body border-secondary-subtle text-center text-body p-0 fw-bold" value="@item.Quantity" readonly style="max-width: 40px; font-size: 14px; height: 31px;" />
+                                                    
+                                                    <button type="submit" name="actionType" value="increase" class="btn btn-outline-secondary border-secondary-subtle fw-bold px-2 text-body">+</button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <span class="fw-bold font-monospace text-body-secondary small">1 Unit <small class="d-block text-muted" style="font-size: 9px; transform: scale(0.95);">(Digital License)</small></span>
+                                            }
+                                        </td>
+                                        
+                                        <td class="text-end fw-bold text-body-secondary">$@item.Price.ToString("F2")</td>
+                                        <td class="text-end fw-bold text-success">$@item.TotalPrice.ToString("F2")</td>
+                                        <td class="text-center">
+                                            <form asp-controller="Cart" asp-action="RemoveFromCart" method="post" class="m-0">
+                                                <input type="hidden" name="productId" value="@item.ProductId" />
+                                                <button type="submit" class="btn btn-outline-danger btn-sm border-0 py-2 px-3 rounded-circle" title="Deallocate Asset">
+                                                    <i class="bi bi-trash3-fill fs-6"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border border-secondary-subtle p-4 bg-body-tertiary rounded-3 position-sticky" style="top: 20px;">
+                    <h5 class="fw-bold border-bottom border-secondary-subtle pb-2 text-body-emphasis mb-3">
+                        <i class="bi bi-calculator text-primary"></i> Fiscal Matrix Invoice
+                    </h5>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-body-secondary small fw-semibold">Manifest Line Quantities</span>
+                        <span class="fw-bold text-body-emphasis font-monospace">@Model.Sum(i => i.Quantity) Units</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom border-secondary-subtle">
+                        <span class="text-body-secondary small fw-semibold">Logistical Delivery Surcharge</span>
+                        <span class="text-success fw-bold text-uppercase font-monospace" style="font-size: 12px; letter-spacing: 0.5px;">FREE</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fs-5 fw-bold text-body-emphasis">Total Aggregate Cost</span>
+                        <span class="fs-3 fw-bold text-success font-monospace">$@Model.Sum(i => i.TotalPrice).ToString("F2")</span>
+                    </div>
+                    
+                    <a asp-controller="Order" asp-action="Checkout" class="btn btn-success btn-lg w-100 text-uppercase fw-bold shadow-sm py-3 mb-2 small tracking-wider">
+                        <i class="bi bi-credit-card-2-back-fill"></i> Proceed to Checkout Pipeline
+                    </a>
+                    
+                    <a asp-controller="Catalog" asp-action="Index" class="btn btn-outline-body border-secondary-subtle text-body-emphasis bg-body w-100 text-uppercase fw-bold py-2 small mt-1">
+                        <i class="bi bi-arrow-left"></i> Continue Allocation Searches
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

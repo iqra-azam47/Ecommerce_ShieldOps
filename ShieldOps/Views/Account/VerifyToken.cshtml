@@ -1,0 +1,39 @@
+﻿@model ShieldOps.Models.ViewModels.VerifyTokenViewModel
+@{
+    ViewData["Title"] = "Verify Account Token Verification";
+}
+
+<div class="row justify-content-center mt-5 pb-5 mb-5">
+    <div class="col-md-5">
+        <div class="card shadow-lg border border-secondary-subtle rounded-3 overflow-hidden bg-body text-center">
+            
+            <div class="card-header bg-warning text-dark py-3 border-0">
+                <h4 class="m-0 fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> MFA Authentication Challenge</h4>
+            </div>
+            
+            <div class="card-body p-4 bg-body">
+                <p class="text-body-secondary small mb-4">A 6-digit confirmation key has been dispatched to your system terminal logs. Input it below to unlock the storefront.</p>
+                
+                <form asp-action="VerifyToken" method="post" class="m-0">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="Email" />
+
+                    <div class="mb-4 text-start">
+                        <label asp-for="Token" class="form-label fw-bold d-block text-start text-body-emphasis small text-uppercase font-monospace" style="letter-spacing: 0.5px;">6-Digit Security Token</label>
+                        
+                        <input asp-for="Token" class="form-control text-center tracking-widest fs-3 fw-bold bg-body text-body-emphasis border-secondary-subtle py-2 font-monospace" placeholder="000000" maxlength="6" autocomplete="off" />
+                        <span asp-validation-for="Token" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-2 fs-5 fw-bold text-uppercase shadow-xs">Validate and Authorize Session</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

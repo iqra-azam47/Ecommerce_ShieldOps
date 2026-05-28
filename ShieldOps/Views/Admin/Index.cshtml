@@ -1,0 +1,143 @@
+﻿@model List<ShieldOps.Models.Order>
+@{
+    ViewData["Title"] = "Command Center Operations Dashboard";
+    var activeProducts = ViewBag.Products as List<ShieldOps.Models.Product> ?? new List<ShieldOps.Models.Product>();
+}
+
+<div class="container mt-4 mb-5 pb-4">
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm border border-secondary-subtle bg-dark text-white p-3 sticky-top shadow" style="top: 20px;">
+                <h5 class="fw-bold border-bottom border-secondary pb-2 text-info"><i class="bi bi-shield-lock"></i> Ops Security Admin</h5>
+                <div class="nav flex-column nav-pills mt-3">
+                    <a href="#orders-panel" class="nav-link text-white active border-bottom border-secondary rounded-0 py-3" data-bs-toggle="pill"><i class="bi bi-receipt-cutoff"></i> Order Shipment Pipeline</a>
+                    <a href="#products-panel" class="nav-link text-white border-bottom border-secondary rounded-0 py-3" data-bs-toggle="pill"><i class="bi bi-box-seam-fill"></i> Warehouse Inventory CRUD</a>
+                    <a asp-controller="Admin" asp-action="CreateProduct" class="btn btn-info fw-bold text-dark w-100 mt-4 py-2 text-uppercase small tracking-wider"><i class="bi bi-plus-circle-fill"></i> Deploy New Countermeasure</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="tab-content">
+                
+                <div class="tab-pane fade show active" id="orders-panel">
+                    <h3 class="fw-bold mb-3 text-body-emphasis"><i class="bi bi-truck"></i> Fleet Logistics & Deployment Status Console</h3>
+                    <div class="card shadow-sm border border-secondary-subtle bg-body rounded-3 overflow-hidden">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle m-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Op ID</th>
+                                        <th>Target Operator</th>
+                                        <th>Timestamp</th>
+                                        <th>Grand Total</th>
+                                        <th class="text-center">Current Status Node</th>
+                                        <th class="text-end" style="min-width: 180px;">System Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-body">
+                                    @foreach (var order in Model)
+                                    {
+                                        <tr class="border-secondary-subtle">
+                                            <td class="fw-bold text-body-emphasis">#@order.Id</td>
+                                            <td>
+                                                <span class="fw-bold text-body-emphasis">@order.User?.FullName</span>
+                                                <br /><small class="text-body-secondary">@order.User?.Email</small>
+                                            </td>
+                                            <td class="small text-body-secondary">@order.OrderDate.ToLocalTime().ToString("g")</td>
+                                            <td class="fw-bold text-success">$@order.TotalAmount.ToString("F2")</td>
+                                            <td class="text-center">
+                                                <span class="badge @(order.Status == ShieldOps.Models.OrderStatus.Delivered ? "bg-success text-white" : "bg-secondary") p-2 text-uppercase font-monospace" style="font-size: 11px;">
+                                                    @order.Status
+                                                </span>
+                                                @if (order.ReturnState != ShieldOps.Models.ReturnStatus.None)
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle d-block mt-1 font-monospace" style="font-size: 9px;">RETURN: @order.ReturnState</span>
+                                                }
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <div class="d-flex justify-content-end gap-1">
+                                                    <a asp-controller="Admin" asp-action="OrderDetails" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary fw-bold" title="Open Dynamic Audit Diagnostics View">
+                                                        <i class="bi bi-eye-fill"></i> Audit
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="products-panel">
+                    <h3 class="fw-bold mb-3 text-body-emphasis"><i class="bi bi-boxes"></i> Master Infrastructure Countermeasures Inventory Ledger</h3>
+                    <div class="card shadow-sm border border-secondary-subtle bg-body rounded-3 overflow-hidden">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle m-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Asset Details</th>
+                                        <th>Classification</th>
+                                        <th class="text-center">Deployment State</th>
+                                        <th class="text-end">Base Cost</th>
+                                        <th class="text-center">Stock Matrix</th>
+                                        <th class="text-center" style="min-width: 160px;">Operational Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-body">
+                                    @foreach (var prod in activeProducts)
+                                    {
+                                        <tr class="border-secondary-subtle">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="@prod.ImageUrl" class="rounded border border-secondary-subtle me-3" style="width: 42px; height: 42px; object-fit: cover;" alt="" />
+                                                    <div>
+                                                        <span class="fw-bold text-body-emphasis d-block">@prod.Name</span>
+                                                        <small class="text-body-secondary">@prod.Category?.Name</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td><span class="badge bg-dark border border-secondary font-monospace text-uppercase" style="font-size: 10px;">@prod.Type</span></td>
+                                            
+                                            <td class="text-center">
+                                                @if (prod.IsActive)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 uppercase font-monospace" style="font-size: 10px;">Active Catalog</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 uppercase font-monospace" style="font-size: 10px;">Hidden/Inactive</span>
+                                                }
+                                            </td>
+
+                                            <td class="text-end fw-bold text-body-emphasis font-monospace">$@prod.Price.ToString("F2")</td>
+                                            <td class="text-center fw-bold @(prod.StockQuantity <= 5 ? "text-danger animate-pulse" : "text-success") font-monospace">@prod.StockQuantity Units</td>
+                                            
+                                            <td class="text-center">
+                                                <div class="d-flex justify-content-center align-items-center gap-1">
+                                                    <a asp-controller="Admin" asp-action="EditProduct" asp-route-id="@prod.Id" class="btn btn-outline-warning btn-sm fw-bold text-uppercase px-2" title="Modify Configuration Rules Matrix">
+                                                        <i class="bi bi-pencil-square"></i> Edit
+                                                    </a>
+                                                    
+                                                    <form asp-controller="Admin" asp-action="DeleteProduct" method="post" class="m-0" onsubmit="return confirm('Decommission target strategic asset permanently from database tracks?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@prod.Id" />
+                                                        <button type="submit" class="btn btn-link link-danger text-decoration-none btn-sm fw-bold px-2" title="Wreak Node Asset Matrix">
+                                                            <i class="bi bi-trash3-fill"></i> Wreak
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
