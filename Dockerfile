@@ -1,16 +1,22 @@
-# Build Stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
-COPY *.sln .
-COPY ShieldOps/*.csproj ./ShieldOps/
-RUN dotnet restore
-COPY . .
-WORKDIR /app/ShieldOps
-RUN dotnet publish -c Release -o /out
+WORKDIR /src
 
-# Runtime Stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+# Copy solution and project files
+COPY ["ShieldOps.sln", "./"]
+COPY ["ShieldOps/ShieldOps.csproj", "ShieldOps/"]
+
+RUN dotnet restore "ShieldOps/ShieldOps.csproj"
+
+# Copy remaining source code
+COPY . .
+WORKDIR "/src/ShieldOps"
+RUN dotnet build "ShieldOps.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "ShieldOps.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-COPY --from=build /out .
+COPY --from=publish /app/publish .
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "ShieldOps.dll"]
