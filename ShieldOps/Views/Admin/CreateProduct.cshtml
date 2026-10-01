@@ -15,6 +15,8 @@
                 <form asp-controller="Admin" asp-action="CreateProduct" method="post" enctype="multipart/form-data" class="m-0">
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3 small"></div>
 
+                    <input type="hidden" asp-for="ImageUrl" value="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500" />
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label asp-for="Name" class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace" style="letter-spacing: 0.5px;">Strategic Asset Identifier Title</label>
@@ -23,7 +25,9 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label asp-for="CategoryId" class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace" style="letter-spacing: 0.5px;">Strategic Domain Node Category</label>
-                            <select asp-for="CategoryId" class="form-select bg-body text-body-emphasis border-secondary-subtle fw-bold text-primary py-2" asp-items="ViewBag.CategoryList" required></select>
+                            <select asp-for="CategoryId" class="form-select bg-body text-body-emphasis border-secondary-subtle fw-bold text-primary py-2" asp-items="ViewBag.CategoryList" required>
+                                <option value="" disabled selected>-- Select Countermeasure Category --</option>
+                            </select>
                             <span asp-validation-for="CategoryId" class="text-danger small mt-1 d-block"></span>
                         </div>
                     </div>
@@ -59,7 +63,7 @@
                     </div>
 
                     <div class="d-flex justify-content-between pt-3 border-top border-secondary-subtle">
-                        <a asp-action="Index" asp-fragment="products-panel" class="btn btn-secondary px-4 fw-bold text-uppercase small py-2">Abort Strategy</a>
+                        <a asp-action="Index" class="btn btn-secondary px-4 fw-bold text-uppercase small py-2">Abort Strategy</a>
                         <button type="submit" class="btn btn-info text-dark fw-bold px-5 text-uppercase small py-2 shadow-xs">Publish Countermeasure Asset</button>
                     </div>
                 </form>

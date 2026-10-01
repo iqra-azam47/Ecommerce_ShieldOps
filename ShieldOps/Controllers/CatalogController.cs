@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -14,12 +16,18 @@ namespace ShieldOps.Controllers
     public class CatalogController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public CatalogController(ApplicationDbContext context)
+        // Constructor injects both Database Context and Native UserManager tracking systems
+        public CatalogController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
+        // ==========================================
+        // 1. GET: DEFENSIVE CATALOG WORKSPACE (PUBLIC)
+        // ==========================================
         [HttpGet]
         public async Task<IActionResult> Index(ProductFilterViewModel? filter = null)
         {
@@ -28,35 +36,48 @@ namespace ShieldOps.Controllers
                 filter = new ProductFilterViewModel();
             }
 
-            var allCategories = await _context.Categories.ToListAsync();
-            decimal highestPrice = await _context.Products.AnyAsync()
-                ? await _context.Products.MaxAsync(p => p.Price)
-                : 500.00m;
+            // REAL SQLITE DATA QUERY: Read all seeded categories from dynamic database file
+            var dbCategories = await _context.Categories.ToListAsync();
 
-            IQueryable<Product> query = _context.Products.Include(p => p.Category).Where(p => p.IsActive);
+            // FIX: Computes the actual maximum price constraint ONLY from visible active items
+            decimal highestPrice = await _context.Products.AnyAsync(p => p.IsActive)
+                ? await _context.Products.Where(p => p.IsActive).MaxAsync(p => p.Price)
+                : 500.00M;
 
+            // FIX: Prepares an open relational Queryable matrix that pre-filters only active architectural deployment vectors
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Where(p => p.IsActive) // Intercepts and excludes hidden/inactive modules immediately
+                .AsQueryable();
+
+            // Dynamic search parsing over actual SQL query level text criteria
             if (!string.IsNullOrWhiteSpace(filter.SearchQuery))
             {
-                query = query.Where(p => p.Name.Contains(filter.SearchQuery) || p.Description.Contains(filter.SearchQuery));
+                string search = filter.SearchQuery.Trim().ToLower();
+                query = query.Where(p => p.Name.ToLower().Contains(search) || p.Description.ToLower().Contains(search));
             }
 
+            // Multiple categories filtration assignment tracking loop
             if (filter.SelectedCategories != null && filter.SelectedCategories.Any())
             {
                 query = query.Where(p => filter.SelectedCategories.Contains(p.CategoryId));
             }
 
+            // Filtering based on product hardware types enums criteria
             if (filter.SelectedType.HasValue)
             {
                 query = query.Where(p => p.Type == filter.SelectedType.Value);
             }
 
+            // Enforcing upper boundary threshold pricing limits parameters
             if (filter.MaxPrice.HasValue)
             {
                 query = query.Where(p => p.Price <= filter.MaxPrice.Value);
             }
 
+            // Hydrating the view model presentation layer with absolute real data lists
             filter.Products = await query.ToListAsync();
-            filter.Categories = allCategories;
+            filter.Categories = dbCategories;
             filter.AbsoluteMaxPrice = highestPrice;
 
             if (!filter.MaxPrice.HasValue)
@@ -67,129 +88,125 @@ namespace ShieldOps.Controllers
             return View(filter);
         }
 
+        // ==========================================
+        // 2. GET: SPECIFICATIONS LEDGER DETAILS View
+        // ==========================================
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
+            // REAL RELATION QUERIES: Fetch true target physical product specs using primary key identity index
             var product = await _context.Products
                 .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (product == null) return NotFound("Target countermeasure asset missing.");
-
-            var reviews = await _context.Reviews
-                .Include(r => r.User)
-                .Where(r => r.ProductId == id)
-                .OrderByDescending(r => r.CreatedAt)
-                .ToListAsync();
-
-            // VERIFICATION SECURITY CHALLENGE ENGINE
-            bool verifiedBuyer = false;
-            bool hasExistingReview = false;
-            int existingRating = 5;
-            string existingComment = string.Empty;
-
-            if (User.Identity != null && User.Identity.IsAuthenticated)
+            if (product == null)
             {
-                var currentUserId = _context.Users
-                    .FirstOrDefault(u => u.UserName == User.Identity.Name)?.Id;
-
-                if (!string.IsNullOrEmpty(currentUserId))
-                {
-                    // Strict Validation Logic: Check if user has an order containing this item with status 'Delivered'
-                    verifiedBuyer = await _context.Orders
-                        .Include(o => o.OrderItems)
-                        .AnyAsync(o => o.UserId == currentUserId &&
-                                       o.Status == OrderStatus.Delivered &&
-                                       o.OrderItems.Any(oi => oi.ProductId == id));
-
-                    // FIXED NODE: Check database if this specific user has already logged a review for this product
-                    var existingReview = reviews.FirstOrDefault(r => r.UserId == currentUserId);
-                    if (existingReview != null)
-                    {
-                        hasExistingReview = true;
-                        existingRating = existingReview.Rating;
-                        existingComment = existingReview.Comment;
-                    }
-                }
+                TempData["ErrorMessage"] = "Target defensive countermeasure asset missing from infrastructure database stores.";
+                return RedirectToAction("Index");
             }
+
+            // Fetches all matching historical user review rows assigned to this specific ProductId
+            var reviews = await _context.Reviews
+                .Where(r => r.ProductId == id)
+                .ToListAsync();
 
             var model = new ProductDetailsViewModel
             {
                 Product = product,
                 Reviews = reviews,
-                IsEligibleToReview = verifiedBuyer,
-                // Hydrate existing review fields down into the presentation layers if available
-                NewRating = existingRating,
-                NewComment = existingComment
+                IsEligibleToReview = User.Identity != null && User.Identity.IsAuthenticated, // Restored core session status gate check
+                NewRating = 5,
+                NewComment = string.Empty
             };
 
-            // Injecting view model states flags to toggle Edit/Write layouts at UI level
-            ViewData["IsEditMode"] = hasExistingReview;
-
+            ViewData["IsEditMode"] = false;
             return View(model);
         }
 
+        // ==========================================
+        // 3. POST: AUTHORIZE AND LOG FEEDBACK
+        // ==========================================
         [HttpPost]
-        [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SubmitReview(ProductDetailsViewModel inputModel)
+        public async Task<IActionResult> SubmitReview(ProductDetailsViewModel inputModel, int? productId)
         {
-            var currentUserId = _context.Users
-                .FirstOrDefault(u => u.UserName == User.Identity.Name)?.Id;
-
-            if (string.IsNullOrEmpty(currentUserId)) return Challenge();
-
-            // Double security crosscheck validation on server side before inserting/updating DB
-            bool processedCheck = await _context.Orders
-                .Include(o => o.OrderItems)
-                .AnyAsync(o => o.UserId == currentUserId &&
-                               o.Status == OrderStatus.Delivered &&
-                               o.OrderItems.Any(oi => oi.ProductId == inputModel.Product.Id));
-
-            if (!processedCheck)
+            // Gate check ensuring unauthorized telemetry drops are blocked from writing rows
+            if (User.Identity == null || !User.Identity.IsAuthenticated)
             {
-                TempData["ErrorMessage"] = "Review submission rejected. Profile does not match verified delivered invoice tracks for this asset.";
-                return RedirectToAction("Details", new { id = inputModel.Product.Id });
+                return Challenge();
             }
 
-            if (inputModel.NewRating < 1 || inputModel.NewRating > 5 || string.IsNullOrWhiteSpace(inputModel.NewComment))
+            // Step 1: Extract tracking index identifier through context parameters
+            int targetProductId = 0;
+
+            if (productId.HasValue && productId.Value > 0)
             {
-                TempData["ErrorMessage"] = "Invalid payload constraints. Reviews require ratings between 1-5 stars and descriptive text content.";
-                return RedirectToAction("Details", new { id = inputModel.Product.Id });
+                targetProductId = productId.Value;
+            }
+            else if (inputModel?.Product != null && inputModel.Product.Id > 0)
+            {
+                targetProductId = inputModel.Product.Id;
+            }
+            else if (Request.Form.ContainsKey("productId"))
+            {
+                int.TryParse(Request.Form["productId"], out targetProductId);
+            }
+            else if (Request.Form.ContainsKey("Product.Id"))
+            {
+                int.TryParse(Request.Form["Product.Id"], out targetProductId);
             }
 
-            // FIXED SMART UPSERT LOGIC: Blocks clone logs, updates rows variables naturally
-            var existingReview = await _context.Reviews
-                .FirstOrDefaultAsync(r => r.ProductId == inputModel.Product.Id && r.UserId == currentUserId);
-
-            if (existingReview != null)
+            // Verify if product exists inside SQLite rows
+            bool productExists = await _context.Products.AnyAsync(p => p.Id == targetProductId);
+            if (targetProductId <= 0 || !productExists)
             {
-                // Update Path (Overwrites pre-existing entry keys)
-                existingReview.Rating = inputModel.NewRating;
-                existingReview.Comment = inputModel.NewComment;
-                existingReview.CreatedAt = DateTime.UtcNow; // Refreshes timestamp timeline logs
-
-                _context.Reviews.Update(existingReview);
-                TempData["SuccessMessage"] = "Your configuration log evaluation has been successfully updated.";
+                TempData["ErrorMessage"] = "Payload validation failed: Relational key target sequence does not match any authenticated infrastructure nodes.";
+                return RedirectToAction("Index");
             }
-            else
+
+            // Step 2: Extract active login user identification hash string to satisfy database constraint
+            var currentUserId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(currentUserId))
             {
-                // Insert Path (Creates brand new structural entry row)
+                TempData["ErrorMessage"] = "Identity validation failed: Active profile signature could not be resolved.";
+                return RedirectToAction("Details", new { id = targetProductId });
+            }
+
+            // =========================================================================
+            // CRITICAL SECURITY GUARD: PREVENT DUPLICATE REVIEWS BY THE SAME PROFILE
+            // =========================================================================
+            bool hasAlreadyReviewed = await _context.Reviews.AnyAsync(r => r.ProductId == targetProductId && r.UserId == currentUserId);
+
+            if (hasAlreadyReviewed)
+            {
+                TempData["ErrorMessage"] = "Evaluation Rejected: An active compliance review for this product node has already been logged by your profile security token.";
+                return RedirectToAction("Details", new { id = targetProductId });
+            }
+            // =========================================================================
+
+            if (!string.IsNullOrWhiteSpace(inputModel?.NewComment))
+            {
+                // REAL INSERTION: Population fields mapping precisely with your exact Review model specifications
                 var review = new Review
                 {
-                    ProductId = inputModel.Product.Id,
-                    UserId = currentUserId,
+                    ProductId = targetProductId,
+                    UserId = currentUserId, // Explicitly binds the user security index to avoid foreign key crash loops
                     Rating = inputModel.NewRating,
-                    Comment = inputModel.NewComment,
+                    Comment = inputModel.NewComment.Trim(),
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.Reviews.Add(review);
-                TempData["SuccessMessage"] = "Review matrix logs authorized and published successfully.";
-            }
+                await _context.SaveChangesAsync(); // SQL insert execution statement sync complete
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction("Details", new { id = inputModel.Product.Id });
+                TempData["SuccessMessage"] = "Review matrix logs authorized and published inside database registry successfully.";
+                return RedirectToAction("Details", new { id = targetProductId });
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Payload verification failed: Comment description payload notes require text parameters detail.";
+                return RedirectToAction("Details", new { id = targetProductId });
+            }
         }
-    } // <-- Brackets match and close perfectly here!
+    }
 }

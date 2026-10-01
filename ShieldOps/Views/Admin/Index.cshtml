@@ -9,18 +9,27 @@
         <div class="col-md-3 mb-4">
             <div class="card shadow-sm border border-secondary-subtle bg-dark text-white p-3 sticky-top shadow" style="top: 20px;">
                 <h5 class="fw-bold border-bottom border-secondary pb-2 text-info"><i class="bi bi-shield-lock"></i> Ops Security Admin</h5>
-                <div class="nav flex-column nav-pills mt-3">
-                    <a href="#orders-panel" class="nav-link text-white active border-bottom border-secondary rounded-0 py-3" data-bs-toggle="pill"><i class="bi bi-receipt-cutoff"></i> Order Shipment Pipeline</a>
-                    <a href="#products-panel" class="nav-link text-white border-bottom border-secondary rounded-0 py-3" data-bs-toggle="pill"><i class="bi bi-box-seam-fill"></i> Warehouse Inventory CRUD</a>
-                    <a asp-controller="Admin" asp-action="CreateProduct" class="btn btn-info fw-bold text-dark w-100 mt-4 py-2 text-uppercase small tracking-wider"><i class="bi bi-plus-circle-fill"></i> Deploy New Countermeasure</a>
+                
+                <div class="nav flex-column nav-pills mt-3" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link text-white active border-bottom border-secondary rounded-0 py-3 text-start w-100 bg-transparent" id="v-pills-orders-tab" data-bs-toggle="pill" data-bs-target="#orders-panel" type="button" role="tab" aria-controls="orders-panel" aria-selected="true">
+                        <i class="bi bi-receipt-cutoff me-2"></i> Order Shipment Pipeline
+                    </button>
+                    
+                    <button class="nav-link text-white border-bottom border-secondary rounded-0 py-3 text-start w-100 bg-transparent" id="v-pills-products-tab" data-bs-toggle="pill" data-bs-target="#products-panel" type="button" role="tab" aria-controls="products-panel" aria-selected="false">
+                        <i class="bi bi-box-seam-fill me-2"></i> Warehouse Inventory CRUD
+                    </button>
+                    
+                    <a asp-controller="Admin" asp-action="CreateProduct" class="btn btn-info fw-bold text-dark w-100 mt-4 py-2 text-uppercase small tracking-wider shadow-xs">
+                        <i class="bi bi-plus-circle-fill"></i> Deploy New Countermeasure
+                    </a>
                 </div>
             </div>
         </div>
 
         <div class="col-md-9">
-            <div class="tab-content">
+            <div class="tab-content" id="v-pills-tabContent">
                 
-                <div class="tab-pane fade show active" id="orders-panel">
+                <div class="tab-pane fade show active" id="orders-panel" role="tabpanel" aria-labelledby="v-pills-orders-tab">
                     <h3 class="fw-bold mb-3 text-body-emphasis"><i class="bi bi-truck"></i> Fleet Logistics & Deployment Status Console</h3>
                     <div class="card shadow-sm border border-secondary-subtle bg-body rounded-3 overflow-hidden">
                         <div class="table-responsive">
@@ -70,7 +79,7 @@
                     </div>
                 </div>
 
-                <div class="tab-pane fade" id="products-panel">
+                <div class="tab-pane fade" id="products-panel" role="tabpanel" aria-labelledby="v-pills-products-tab">
                     <h3 class="fw-bold mb-3 text-body-emphasis"><i class="bi bi-boxes"></i> Master Infrastructure Countermeasures Inventory Ledger</h3>
                     <div class="card shadow-sm border border-secondary-subtle bg-body rounded-3 overflow-hidden">
                         <div class="table-responsive">
@@ -103,11 +112,11 @@
                                             <td class="text-center">
                                                 @if (prod.IsActive)
                                                 {
-                                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 uppercase font-monospace" style="font-size: 10px;">Active Catalog</span>
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 text-uppercase font-monospace" style="font-size: 10px;">Active Catalog</span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 uppercase font-monospace" style="font-size: 10px;">Hidden/Inactive</span>
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 text-uppercase font-monospace" style="font-size: 10px;">Hidden/Inactive</span>
                                                 }
                                             </td>
 

@@ -30,8 +30,6 @@ namespace ShieldOps.Controllers
 
         private void SaveCartToSession(List<CartItemViewModel> cart)
         {
-            // FIXED: Removed manual assignment loops over the read-only property 'TotalPrice'.
-            // The CartItemViewModel auto-calculates this value dynamically on the fly via its getters.
             HttpContext.Session.SetString(CART_SESSION_KEY, JsonSerializer.Serialize(cart));
         }
 
@@ -42,22 +40,29 @@ namespace ShieldOps.Controllers
             return View(cart);
         }
 
+        // DUAL VERIFICATION ROUTE: Supports both analytical links (GET) and custom submissions (POST)
+        [HttpGet]
         [HttpPost]
         public async Task<IActionResult> AddToCart(int productId, int quantity = 1)
         {
+            // REAL SQLITE DATA QUERY: Pulling inventory data record from the db file directly
             var product = await _context.Products.FindAsync(productId);
-            if (product == null) return NotFound("Target asset does not exist.");
+            if (product == null)
+            {
+                TempData["ErrorMessage"] = "Target defensive countermeasure asset does not exist in registry database.";
+                return RedirectToAction("Index", "Catalog");
+            }
 
             var cart = GetCartFromSession();
             var existingItem = cart.FirstOrDefault(i => i.ProductId == productId);
 
-            // Accommodates both standard increments and custom variable payloads from details panel
             int currentRequestedQuantity = (existingItem?.Quantity ?? 0) + quantity;
 
+            // REAL WAREHOUSE VALIDATION GATE: Enforces actual dynamic constraints from db column
             if (product.Type == ProductType.Physical && currentRequestedQuantity > product.StockQuantity)
             {
-                TempData["ErrorMessage"] = $"Allocation failed. Cannot request {currentRequestedQuantity} units of '{product.Name}'. Only {product.StockQuantity} remaining in infrastructure stores.";
-                return RedirectToAction("Details", "Catalog", new { id = productId });
+                TempData["ErrorMessage"] = $"Allocation failed. Cannot request {currentRequestedQuantity} units of '{product.Name}'. Only {product.StockQuantity} remaining in infrastructure database stores.";
+                return RedirectToAction("Index", "Catalog");
             }
 
             if (existingItem != null)
@@ -78,11 +83,12 @@ namespace ShieldOps.Controllers
             }
 
             SaveCartToSession(cart);
-            TempData["SuccessMessage"] = $"'{product.Name}' allocated to session cart storage matrix.";
+            TempData["SuccessMessage"] = $"'{product.Name}' allocated to secure session cart tracking log matrix.";
             return RedirectToAction("Index");
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult RemoveFromCart(int productId)
         {
             var cart = GetCartFromSession();
@@ -92,7 +98,7 @@ namespace ShieldOps.Controllers
             {
                 cart.Remove(targetItem);
                 SaveCartToSession(cart);
-                TempData["SuccessMessage"] = "Asset deallocated from secure ledger tracks successfully.";
+                TempData["SuccessMessage"] = "Asset deallocated from secure session ledger tracks successfully.";
             }
 
             return RedirectToAction("Index");
@@ -106,13 +112,14 @@ namespace ShieldOps.Controllers
             var item = cart.FirstOrDefault(c => c.ProductId == productId);
             if (item == null) return RedirectToAction("Index");
 
+            // Fetch dynamic asset state limits natively
             var product = await _context.Products.FindAsync(productId);
             if (product == null) return NotFound("Core product entity reference missing from context stores.");
 
             if (actionType == "increase")
             {
-                // Core validation gate against stockpile limits parameters
-                if (item.Quantity >= product.StockQuantity)
+                // Dynamic threshold validation check over actual physical hardware stock capacity
+                if (product.Type == ProductType.Physical && item.Quantity >= product.StockQuantity)
                 {
                     TempData["ErrorMessage"] = $"Cannot exceed available warehouse logistics threshold limits ({product.StockQuantity} units) for '{product.Name}'.";
                     return RedirectToAction("Index");
@@ -124,7 +131,6 @@ namespace ShieldOps.Controllers
                 item.Quantity--;
                 if (item.Quantity <= 0)
                 {
-                    // Automatic line clean-up action execution if counter drops to zero
                     cart.Remove(item);
                     SaveCartToSession(cart);
                     TempData["SuccessMessage"] = $"'{product.Name}' completely dropped from active operations allocation logs.";

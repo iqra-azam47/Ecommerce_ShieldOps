@@ -114,8 +114,27 @@ namespace ShieldOps.Data
                 }
             );
 
+            // ==========================================
+            // FIX: AUTOMATIC SQLITE TYPE CONVERTER BLOCK
+            // ==========================================
+            if (Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+            {
+                foreach (var entityType in builder.Model.GetEntityTypes())
+                {
+                    var properties = entityType.GetProperties()
+                        .Where(p => p.ClrType == typeof(string));
 
-
+                    foreach (var property in properties)
+                    {
+                        // SQL Server types (nvarchar(max), nvarchar(450)) ko SQLite standard "TEXT" par badalna
+                        var columnNameType = property.GetColumnType();
+                        if (string.IsNullOrEmpty(columnNameType) || columnNameType.Contains("nvarchar"))
+                        {
+                            property.SetColumnType("TEXT");
+                        }
+                    }
+                }
+            }
         }
     }
 }

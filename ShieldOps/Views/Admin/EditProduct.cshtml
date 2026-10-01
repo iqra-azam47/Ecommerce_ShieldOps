@@ -11,27 +11,34 @@
         
         <form asp-controller="Admin" asp-action="EditProduct" method="post" enctype="multipart/form-data" class="m-0">
             @Html.AntiForgeryToken()
+            
             <input type="hidden" asp-for="Id" />
+
+            <input type="hidden" asp-for="ImageUrl" />
 
             <div class="card-body p-4 bg-body text-body">
                 <div class="mb-3">
                     <label asp-for="Name" class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Asset System Name</label>
                     <input asp-for="Name" class="form-control bg-body text-body border-secondary-subtle py-2" required />
+                    <span asp-validation-for="Name" class="text-danger small mt-1 d-block"></span>
                 </div>
 
                 <div class="mb-3">
                     <label asp-for="Description" class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Technical Architectural Description</label>
                     <textarea asp-for="Description" class="form-control bg-body text-body border-secondary-subtle" rows="3" required></textarea>
+                    <span asp-validation-for="Description" class="text-danger small mt-1 d-block"></span>
                 </div>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label asp-for="Price" class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Surcharge Cost ($)</label>
                         <input asp-for="Price" type="number" step="0.01" class="form-control bg-body text-body border-secondary-subtle py-2" required />
+                        <span asp-validation-for="Price" class="text-danger small mt-1 d-block"></span>
                     </div>
                     <div class="col-md-6">
                         <label asp-for="StockQuantity" class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Stockpile Multiplier Vol</label>
                         <input asp-for="StockQuantity" type="number" class="form-control bg-body text-body border-secondary-subtle py-2" required />
+                        <span asp-validation-for="StockQuantity" class="text-danger small mt-1 d-block"></span>
                     </div>
                 </div>
 
@@ -39,16 +46,19 @@
                     <div class="col-md-6">
                         <label asp-for="CategoryId" class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Domain Node Classification</label>
                         <select asp-for="CategoryId" class="form-select bg-body text-body border-secondary-subtle fw-bold text-primary py-2" asp-items="ViewBag.CategoryList" required></select>
+                        <span asp-validation-for="CategoryId" class="text-danger small mt-1 d-block"></span>
                     </div>
                     <div class="col-md-6">
                         <label asp-for="Type" class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Structural Architecture Type</label>
                         <select asp-for="Type" class="form-select bg-body text-body border-secondary-subtle fw-bold text-info py-2" asp-items="Html.GetEnumSelectList<ShieldOps.Models.ProductType>()" required></select>
+                        <span asp-validation-for="Type" class="text-danger small mt-1 d-block"></span>
                     </div>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Replace Asset Graphic Stream</label>
-                    <input type="file" name="productImageFile" class="form-control bg-body text-body border-secondary-subtle py-2" />
+                    <label class="form-label fw-bold text-body-emphasis small text-uppercase font-monospace">Replace Asset Graphic Stream (Optional)</label>
+                    <input type="file" name="productImageFile" class="form-control bg-body text-body border-secondary-subtle py-2" accept="image/*" />
+                    <small class="text-body-secondary d-block mt-1 opacity-75">Leave empty to retain the current defensive asset visual layout matrix.</small>
                 </div>
 
                 <div class="p-3 bg-body-tertiary rounded-3 border border-secondary-subtle mb-4 shadow-2xs">
@@ -60,10 +70,16 @@
                     </div>
 
                     <div class="d-flex gap-2">
-                        <a asp-action="Index" asp-fragment="products-panel" class="btn btn-secondary w-50 fw-bold text-uppercase py-2">Cancel</a>
+                        <a asp-action="Index" class="btn btn-secondary w-50 fw-bold text-uppercase py-2">Cancel</a>
                         <button type="submit" class="btn btn-warning w-50 fw-bold text-uppercase py-2 text-dark">Save System Variations</button>
                     </div>
                 </div>
             </form>
         </div>
     </div>
+
+    @section Scripts {
+        @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        }
+    }

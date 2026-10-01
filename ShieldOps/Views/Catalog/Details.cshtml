@@ -69,6 +69,8 @@
                 {
                     <form asp-controller="Catalog" asp-action="SubmitReview" method="post" class="m-0">
                         @Html.AntiForgeryToken()
+                        
+                        <input type="hidden" name="productId" value="@Model.Product.Id" />
                         <input type="hidden" name="Product.Id" value="@Model.Product.Id" />
 
                         <div class="mb-3">

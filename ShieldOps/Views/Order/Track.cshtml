@@ -98,10 +98,61 @@
                 System Delivery Node Destination: <strong class="text-body-emphasis">@Model.ShippingAddress, @Model.City (@Model.PostalCode)</strong>
             </span>
             
-            <a asp-controller="Order" asp-action="MyOrders" class="btn btn-outline-body border-secondary-subtle text-body-emphasis bg-body-tertiary fw-bold text-uppercase shadow-2xs py-2 px-3">
-                <i class="bi bi-arrow-left-short fs-5 align-middle"></i> Return to My Orders
-            </a>
+            <div class="d-flex align-items-center gap-2">
+                @if (Model.ReturnState == ShieldOps.Models.ReturnStatus.None)
+                {
+                    <button type="button" class="btn btn-outline-danger fw-bold text-uppercase py-2 px-3 shadow-2xs" data-bs-toggle="modal" data-bs-target="#returnManifestModal">
+                        <i class="bi bi-arrow-left-right"></i> Initialize Asset Return
+                    </button>
+                }
+                else
+                {
+                    <span class="badge @(Model.ReturnState == ShieldOps.Models.ReturnStatus.Pending ? "bg-warning text-dark" : Model.ReturnState == ShieldOps.Models.ReturnStatus.Approved ? "bg-success text-white" : "bg-danger text-white") px-3 py-2 text-uppercase font-monospace border border-secondary-subtle shadow-3xs" style="font-size:13px;">
+                        Return Tracking State: @Model.ReturnState
+                    </span>
+                }
+
+                <a asp-controller="Order" asp-action="MyOrders" class="btn btn-outline-body border-secondary-subtle text-body-emphasis bg-body-tertiary fw-bold text-uppercase shadow-2xs py-2 px-3">
+                    <i class="bi bi-arrow-left-short fs-5 align-middle"></i> Return to My Orders
+                </a>
+            </div>
         </div>
 
+    </div>
+</div>
+
+<div class="modal fade" id="returnManifestModal" tabindex="-1" aria-labelledby="returnManifestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-body border border-secondary-subtle shadow">
+            
+            <div class="modal-header bg-dark text-white py-3 border-0">
+                <h5 class="modal-title fw-bold" id="returnManifestModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i> Compliance Return Manifest Setup
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-submit="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form asp-controller="Order" asp-action="RequestAssetReturn" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                
+                <input type="hidden" name="orderId" value="@Model.Id" />
+
+                <div class="modal-body p-4 text-body">
+                    <p class="text-body-secondary small mb-3">
+                        Please specify rigorous technical structural failure feedback logs. This action initializes secure stock reversal tracks.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small font-monospace fw-bold text-body-emphasis text-uppercase" style="letter-spacing:0.5px;">Audit Exception Rationale Statement</label>
+                        <textarea name="returnReason" class="form-control bg-body text-body border-secondary-subtle" rows="4" placeholder="Detail explicit network countermeasures flaws or pipeline anomalies here..." required></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer bg-body-tertiary border-top border-secondary-subtle p-3 d-flex gap-2">
+                    <button type="button" class="btn btn-secondary text-uppercase fw-bold py-2 px-4 small" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger text-white text-uppercase fw-bold py-2 px-4 small shadow-sm">Dispatch Query Payload</button>
+                </div>
+            </form>
+
+        </div>
     </div>
 </div>

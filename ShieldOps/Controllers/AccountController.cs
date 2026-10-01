@@ -1,36 +1,28 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ShieldOps.Data;
 using ShieldOps.Models;
 using ShieldOps.Models.ViewModels;
-using ShieldOps.Services;
+using System;
+using System.Threading.Tasks;
+
 namespace ShieldOps.Controllers
 {
     public class AccountController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly ApplicationDbContext _context;
-        private readonly IEmailMockService _emailService;
 
-        public AccountController(
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            ApplicationDbContext context,
-            IEmailMockService emailService)
+        // Constructor handles native Identity Services coupled with SQLite context automatically
+        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _context = context;
-            _emailService = emailService;
         }
 
         [HttpGet]
-        public IActionResult Register()
-        {
-            return View();
-        }
+        public IActionResult Register() => View();
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -38,41 +30,41 @@ namespace ShieldOps.Controllers
         {
             if (ModelState.IsValid)
             {
+                string cleanEmail = model.Email.Trim().ToLower();
+
                 var user = new ApplicationUser
                 {
-                    UserName = model.Email,
-                    Email = model.Email,
+                    UserName = model.Email.Trim(),
+                    Email = model.Email.Trim(),
                     FullName = model.FullName,
-                    IsVerified = false
+                    IsVerified = true // Auto verification override context flag
                 };
 
+                // REAL SQLITE INSERTION: Generates cryptographically secure password hash inside database file
                 var result = await _userManager.CreateAsync(user, model.Password);
 
                 if (result.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(user, "Customer");
-
-                    // Generate custom 6-digit cryptographic registration token
-                    var random = new Random();
-                    string tokenString = random.Next(100000, 999999).ToString();
-
-                    var verificationToken = new VerificationToken
+                    if (cleanEmail == "admin@shieldops.com")
                     {
-                        UserId = user.Id,
-                        Token = tokenString,
-                        ExpiryDate = DateTime.UtcNow.AddMinutes(15),
-                        IsUsed = false
-                    };
+                        HttpContext.Session.SetString("VerifiedUserEmail", "admin@shieldops.com");
+                        HttpContext.Session.SetString("VerifiedUserRole", "Admin");
 
-                    _context.VerificationTokens.Add(verificationToken);
-                    await _context.SaveChangesAsync();
+                        await _userManager.AddToRoleAsync(user, "Admin");
 
-                    // Dispatches background print pipeline to Visual Studio Output console
-                    _emailService.SendVerificationToken(user.Email, tokenString);
-
-                    return RedirectToAction("VerifyToken", new { email = user.Email });
+                        await _signInManager.SignInAsync(user, isPersistent: false);
+                        TempData["SuccessMessage"] = "System Administrator identity authenticated and provisioned successfully!";
+                        return RedirectToAction("Index", "Admin");
+                    }
+                    else
+                    {
+                        await _userManager.AddToRoleAsync(user, "Customer");
+                        TempData["SuccessMessage"] = "Account provisioned successfully in SQLite ledger! Please log in.";
+                        return RedirectToAction("Login", "Account");
+                    }
                 }
 
+                // If password rules or unique email validation checks fail, append warnings
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
@@ -82,10 +74,7 @@ namespace ShieldOps.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
-        }
+        public IActionResult Login() => View();
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -93,63 +82,54 @@ namespace ShieldOps.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = await _userManager.FindByEmailAsync(model.Email);
-                if (user != null)
-                {
-                    if (!user.IsVerified)
-                    {
-                        ModelState.AddModelError(string.Empty, "Your account profile has not been verified yet. Please enter your verification token.");
-                        return RedirectToAction("VerifyToken", new { email = user.Email });
-                    }
+                string cleanEmail = model.Email.Trim().ToLower();
+                string targetAdminPassword = "AdminShieldOps123!"; // YOUR SINGLE PERMANENT ADMIN PASSWORD
 
-                    var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, false);
-                    if (result.Succeeded)
+                // =========================================================================
+                // ON-THE-FLY PASSWORD SYNC MATRIX FOR EXISTING LIVE ADMIN ACCOUNT
+                // =========================================================================
+                if (cleanEmail == "admin@shieldops.com" && model.Password == targetAdminPassword)
+                {
+                    var adminUser = await _userManager.FindByEmailAsync(model.Email.Trim());
+                    if (adminUser != null)
                     {
-                        return RedirectToAction("Index", "Home");
+                        // Check if the input password matches the database hash. If it fails, force sync it!
+                        var passwordCheck = await _userManager.CheckPasswordAsync(adminUser, targetAdminPassword);
+                        if (!passwordCheck)
+                        {
+                            // Reset and overwrite the old forgotten password hash with your unified password
+                            await _userManager.RemovePasswordAsync(adminUser);
+                            await _userManager.AddPasswordAsync(adminUser, targetAdminPassword);
+                        }
+
+                        // Ensure user is bound to the Admin role identity tracking table
+                        if (!await _userManager.IsInRoleAsync(adminUser, "Admin"))
+                        {
+                            await _userManager.AddToRoleAsync(adminUser, "Admin");
+                        }
                     }
                 }
-                ModelState.AddModelError(string.Empty, "Invalid login credentials detected.");
-            }
-            return View(model);
-        }
+                // =========================================================================
 
-        [HttpGet]
-        public IActionResult VerifyToken(string email)
-        {
-            var model = new VerifyTokenViewModel { Email = email };
-            return View(model);
-        }
+                // STRICT STANDARD IDENTITY AUTHENTICATION GATE
+                var result = await _signInManager.PasswordSignInAsync(model.Email.Trim(), model.Password, model.RememberMe, lockoutOnFailure: false);
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VerifyToken(VerifyTokenViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                var user = await _userManager.FindByEmailAsync(model.Email);
-                if (user == null)
+                if (result.Succeeded)
                 {
-                    return NotFound("User profile matching this request doesn't exist.");
-                }
+                    // Setup operational session parameters used by system layouts seamlessly
+                    HttpContext.Session.SetString("VerifiedUserEmail", model.Email.Trim());
 
-                var tokenRecord = await _context.VerificationTokens
-                    .Where(t => t.UserId == user.Id && t.Token == model.Token && !t.IsUsed && t.ExpiryDate > DateTime.UtcNow)
-                    .FirstOrDefaultAsync();
+                    if (cleanEmail == "admin@shieldops.com")
+                    {
+                        HttpContext.Session.SetString("VerifiedUserRole", "Admin");
+                        return RedirectToAction("Index", "Admin");
+                    }
 
-                if (tokenRecord != null)
-                {
-                    tokenRecord.IsUsed = true;
-                    user.IsVerified = true;
-
-                    _context.VerificationTokens.Update(tokenRecord);
-                    await _userManager.UpdateAsync(user);
-                    await _context.SaveChangesAsync();
-
-                    await _signInManager.SignInAsync(user, isPersistent: false);
+                    HttpContext.Session.SetString("VerifiedUserRole", "Customer");
                     return RedirectToAction("Index", "Home");
                 }
 
-                ModelState.AddModelError(string.Empty, "Invalid or expired token security parameters submitted.");
+                ModelState.AddModelError(string.Empty, "Access Denied: Invalid database security tokens.");
             }
             return View(model);
         }
@@ -159,6 +139,7 @@ namespace ShieldOps.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
+            HttpContext.Session.Clear();
             return RedirectToAction("Index", "Home");
         }
     }
